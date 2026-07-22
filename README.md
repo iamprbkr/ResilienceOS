@@ -1,77 +1,90 @@
-# AI-Native Cyber Resilience & Governance Simulation Platform
+# ResilienceOS
 
-Production-ready MVP for an enterprise SaaS platform that runs cyber, AI governance, crisis, GRC, privacy, and operational resilience simulations.
+Cyber, AI governance, and executive tabletop simulation platform. Run crisis exercises, map controls to standards, generate board-ready reports. Multi-tenant SaaS, ready to deploy.
 
-## What Is Included
-
-- React, TypeScript, TailwindCSS, Framer Motion, Recharts frontend
-- Node.js, Express, TypeScript backend API
-- Tenant-aware data model examples
-- Scenario, inject, live session, scoring, standards mapping, audit, and report endpoints
-- PostgreSQL repository adapter with migrations and seed data
-- Functional sidebar workspaces: Command, Tabletop, Scenarios, Threat AI, Training, Standards, Reports, Admin
-- Working notifications, light/dark mode, and responsive navigation
-- Enterprise KPI strip, Evidence Vault, integrations, and $25k launch-tier positioning
-- Admin URL at `/admin`
-- Root Dockerfile, Render config, Railway config, Vercel frontend config
-- Docker Compose dependencies for PostgreSQL, Redis, Neo4j, and Qdrant
-- Product, architecture, security, database, API, deployment, and roadmap documentation
-
-## Run Locally
+## Quick Start
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm --filter api dev      # API at http://localhost:8787
+pnpm --filter frontend dev  # UI at http://localhost:5173
 ```
 
-Frontend: `http://localhost:5173`
+Sign in with `admin@demo.local` (no password in demo mode).
 
-API: `http://localhost:8787`
+## Security
 
-## Run Production Preview
+Audited and hardened. No critical or high severity open items.
 
-```bash
-npm install
-npm run build
-$env:PORT="8790"
-$env:SERVE_FRONTEND="true"
-$env:REPOSITORY_DRIVER="memory"
-npm start
+| Fix | What changed |
+|-----|-------------|
+| Auth bypass | Removed demo-user fallback. Unauthenticated requests get 401. |
+| JWT secret | Auto-generated 32-byte random secret. No hardcoded default. |
+| CORS | Origin validation rejects unknown hosts. |
+| CSP + HSTS | Headers set on every response. |
+| WebSocket auth | JWT token validated on connection. |
+| 401 auto-logout | Frontend clears session when token expires. |
+
+Full report: `docs/SECURITY_AUDIT_REPORT.md`
+
+## What's Inside
+
+- 15 workspace views: Command, Tabletop, Scenarios, Threat AI, Training, Standards, Reports, Admin, and more
+- Adaptive AI threat injects (RAG poisoning, model abuse, privacy incidents)
+- Standards mapping: NIST CSF, ISO 27001, SOC 2, MITRE ATT&CK, MITRE ATLAS, AI RMF, ISO 42001, DORA
+- After-action reports with PDF, DOCX, CSV export
+- Simulation engine: advance time, log decisions, track risk state
+- RBAC with 15 roles and 5 permissions
+- Audit trail with search and filters
+- Light/dark mode, responsive layout
+
+## Architecture
+
 ```
-
-App: `http://localhost:8790`
-
-Admin: `http://localhost:8790/admin`
-
-Local infrastructure:
-
-```bash
-docker compose up -d
-npm run db:migrate
-```
-
-## Workspace
-
-```text
 apps/
-  api/        Express API, domain models, seed data
-  frontend/   Enterprise command center UI
-docs/         Architecture and startup deliverables
+  api/        Express server, domain services, seed data, PostgreSQL adapter
+  frontend/   React SPA, TailwindCSS, Framer Motion, Recharts
+docs/         Architecture, deployment, user and admin manuals
 ```
 
-## MVP Scope
+API serves the frontend in production (`SERVE_FRONTEND=true`). For separate deployment, Vercel serves the frontend while the API runs on Render or Railway.
 
-The MVP includes a polished command-center experience, scenario library, simulation timeline, AI threat injects, cybersecurity training tracking, standards coverage, resilience analytics, executive decision intelligence, after-action report generation, admin controls, and deployment-ready configuration.
+## Deploy
 
-## Key Manuals
+**Render** (simplest, free tier):
+1. Connect `github.com/iamprbkr/ResilienceOS` to Render
+2. Auto-detects `render.yaml` — click Apply
+3. Set `JWT_SECRET` in Render dashboard
 
-- `docs/USER_GUIDE.md`
-- `docs/ADMIN_MANUAL.md`
-- `docs/GITHUB_SETUP.md`
-- `docs/VERCEL_DEPLOYMENT.md`
-- `docs/DEPLOYMENT_READY.md`
-- `docs/TESTING_CHECKLIST.md`
-- `docs/FINAL_READINESS.md`
-- `docs/SCOPE_COVERAGE.md`
-- `docs/ENTERPRISE_PRODUCT_PACKAGE.md`
-- `docs/SUCCESS_RUNBOOK.md`
+**Vercel + Render** (separated):
+- Frontend: import repo into Vercel, build command `cd apps/frontend && npm install && npm run build`, output `apps/frontend/dist`
+- API: create Web Service on Render, select Docker, point at root Dockerfile
+- Set `VITE_API_BASE_URL` to your Render URL
+
+## Environment
+
+Key variables documented in `.env.example` and `.env.production.example`:
+
+| Variable | Required for |
+|----------|-------------|
+| `JWT_SECRET` | Token signing (auto-gen if absent) |
+| `DATABASE_URL` | PostgreSQL connection |
+| `WEB_ORIGIN` | CORS allowlist |
+| `REPOSITORY_DRIVER` | `memory` or `postgres` |
+
+## CI/CD
+
+GitHub Actions workflow at `.github/workflows/ci.yml`. Builds both workspaces, runs self-test, audits dependencies, starts production preview, runs smoke test. Requires pnpm.
+
+## Docs
+
+- `docs/USER_GUIDE.md` — Role-based platform guide
+- `docs/ADMIN_MANUAL.md` — Admin console, users, tenants
+- `docs/DEPLOYMENT_READY.md` — Production checklist
+- `docs/API.md` — Endpoint reference
+- `docs/SECURITY_AUDIT_REPORT.md` — Full audit findings and fixes
+- `docs/V2.0_ROADMAP.md` — Planned improvements
+
+## License
+
+See LICENSE file.
