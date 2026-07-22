@@ -1,0 +1,45 @@
+name: Enterprise Portal CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  build-test-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend and API
+        run: pnpm build
+
+      - name: API self-test
+        run: pnpm selftest
+
+      - name: Production dependency audit
+        run: pnpm audit --prod
+
+      - name: Start production preview
+        run: |
+          PORT=8791 SERVE_FRONTEND=true REPOSITORY_DRIVER=memory pnpm start &
+          sleep 5
+
+      - name: Smoke test production preview
+        env:
+          SMOKE_BASE_URL: http://localhost:8791
+        run: pnpm smoke

@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: ai-resilience-platform
+    env: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: SERVE_FRONTEND
+        value: "true"
+      - key: REPOSITORY_DRIVER
+        value: memory
+      - key: JWT_SECRET
+        generateValue: true
