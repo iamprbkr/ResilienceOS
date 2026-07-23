@@ -1,5 +1,7 @@
 # ResilienceOS — Product-Market Fit
 
+**Status: Pre-revenue / MVP.** Working product deployed, security-audited, CI-ready. Zero paying customers. This document identifies the market opportunity and path to first revenue.
+
 ## What We Built
 
 ResilienceOS is an open-source simulation platform that measures and proves organizational readiness. Not another compliance checkbox. A tool that generates evidence, maps it to any framework, and tracks improvement over time.
@@ -83,9 +85,76 @@ Three shifts make this product timely:
 2. **AI governance is mandatory.** DORA, EU AI Act, and ISO 42001 all require AI-specific testing. Most GRC tools have nothing for this.
 3. **Budgets are under pressure.** CFOs are asking security teams to prove ROI. A platform that generates evidence and tracks readiness scores gives CISOs a metric to defend their budget.
 
+**Why no YC startup has built this yet.** Of 108 YC security startups (2025-2026), all cluster around technical security: AI pentesting, agent auth, runtime protection, cloud security. None build organizational resilience simulation. The reasons: GRC sales cycles are long, the moat is content not code, and the regulatory tailwinds (DORA, EU AI Act) are only now creating urgency. This gives an 18-24 month window to establish category leadership before YC entrants or incumbent pivots arrive.
+
 ---
 
-## Value Proposition by Buyer Persona
+## Y Combinator Startup Landscape (2025-2026)
+
+YC funded 108 security startups as of mid-2026. None compete head-to-head with ResilienceOS. The entire cohort clusters around AI-powered technical security — pentesting automation, agent authentication, runtime protection. **No YC startup builds adaptive organizational resilience training.**
+
+This is both evidence of blue ocean and a signal the market is unproven at startup scale. The table below maps every relevant YC company.
+
+### AI-Native Pentesting & Offensive Security
+
+These companies automate what penetration testers do: find vulnerabilities in code, APIs, and infrastructure. They serve the same buyer (CISO) but solve a different problem — technical vuln detection versus organizational readiness.
+
+| Startup | Batch | What They Build | Why It Is Not ResilienceOS |
+|---------|-------|----------------|---------------------------|
+| **Hex Security** | W26 | AI agents for continuous pentesting. Found vulns in dozens of YC companies. $3B+ estimated damages prevented. | Technical vuln scanning. No tabletop, no board reports, no organizational readiness score. |
+| **MindFort** | P25 | Autonomous AI agents that find, exploit, and patch web app vulns. Raised $3.2M. | Remediation-focused. Tests code, not people or processes. |
+| **Nebula Security** | S26 | AI-native security auditing. Founders are world-class CTF hackers, DEF CON winners, $400K in bug bounties. | Code-level review. No simulation, no frameworks mapping, no exercise format. |
+| **Veria Labs** | F25 | AI agents that hack better than humans. Found critical bugs in AI tools, OS, crypto exchanges. | Vuln research tooling. Different buyer (dev team vs GRC/CISO). |
+| **Casco** | P25 | Autonomous security testing for web apps, APIs, AI systems. 100+ customers including Gusto, CrewAI. | Continuous scanning, not simulation. Output is vuln reports, not readiness scores. |
+| **Fabraix** | S26 | AI red-teaming agent (Nyx). 78% attack success vs 67% for GPT-5.6 on AgentHarm. Library of 10K+ jailbreaks. | AI-specific red-teaming. Tests AI agents, not organizational processes. |
+
+### Agentic Security Platforms
+
+| Startup | Batch | What They Build | Why It Is Not ResilienceOS |
+|---------|-------|----------------|---------------------------|
+| **Tolmo** | P26 | Agent-driven security platform. Fleets of AI agents on live production knowledge graph. | Remediation automation for cloud/CI/CD. No exercise simulation. |
+| **Cotool** | P25 | AI co-pilot for security teams. No-code agent builder. 70% time reduction on investigations. | SOC efficiency tool. Different workflow (triage vs readiness). |
+
+### AI Agent Security (Auth, Runtime, DLP)
+
+| Startup | Batch | What They Build | Why It Is Not ResilienceOS |
+|---------|-------|----------------|---------------------------|
+| **Multifactor** | F25 | Zero-trust auth, authorization, auditing for AI agents. Patented AI security. Top YC F25 company. | AuthZ for agents. Not an exercise or simulation platform. |
+| **Alter** | S25 | Zero-trust IAM for AI agents. SOC 2/HIPAA/GDPR compliant. | Access control. Complements our use case but does not compete. |
+| **Silmaril** | S26 | Runtime security for AI that self-improves. Blocks 96% of prompt injection attacks. | AI-specific firewall. Technical control, not organizational readiness. |
+| **Candor** | W25 | Agentic DLP and insider risk management. | Data loss prevention. No exercise simulation. |
+
+### Runtime & Application Security
+
+| Startup | Batch | What They Build | Why It Is Not ResilienceOS |
+|---------|-------|----------------|---------------------------|
+| **RASPIRE** | S26 | Autonomous runtime security for mobile apps. 20M+ end users protected. | App shielding. Different buyer (app sec vs GRC/CISO). |
+| **Crosslayer Labs** | W26 | Internet infrastructure protection (DNS, BGP, TLS). Princeton professors. | Network-layer monitoring. No organizational simulation. |
+| **GhostEye** | S25 | Employee attack surface management. Autonomous security loop for people. | Phishing/social engineering testing. Narrower scope. |
+
+### Why No YC Startup Competes Directly
+
+Organizational resilience training is a hard SaaS sale:
+
+1. **Long sales cycle.** GRC and CISO buyers take 3-6 months. YC favors startups with short enterprise sales cycles or PLG motions.
+2. **Content moat, not code moat.** The value is in the scenarios and framework mappings, not the software. YC evaluates technology-first pitches.
+3. **Incumbent consulting relationships.** Companies already pay $25k-$75k per tabletop to consultancies. Displacing trusted advisors is harder than displacing a tool.
+4. **Regulatory timing.** DORA, EU AI Act, and NIST CSF 2.0 are creating urgency now that did not exist 12 months ago. Early YC batches could not have bet on this wave.
+
+This creates an 18-24 month window where ResilienceOS can establish category leadership before YC-backed competitors pivot into this space or new entrants appear.
+
+### Adjacent Non-YC Competitors
+
+| Competitor | Funding | What They Do | Gap |
+|-----------|---------|-------------|-----|
+| **Scythe** | $35M Series A | Platform for automated adversarial simulation. Technical red/blue team exercises. | Engineering-focused. No board reporting, no GRC mapping, no AI governance. Enterprise-only pricing (custom quote). |
+| **AttackIQ** | $67M Series D | Continuous security validation platform. MITRE ATT&CK-based breach and attack simulation. | Technical controls testing. CISO tool, not GRC or board tool. |
+| **OneTrust** | $920M total | GRC, privacy, AI governance platform. $30/mo start, $200k+ enterprise. | Control tracking, not simulation. No adaptive exercise capability. |
+| **ServiceNow GRC** | Public ($220B cap) | Enterprise GRC module. $50k+/yr. | Policy and risk register. No testing or readiness scoring. |
+| **Vanta** | $374M total | Automated SOC 2, ISO 27001 compliance. $7.5k-$30k+/yr. | Compliance automation. Does not test controls under pressure. |
+| **Drata** | $324M total | Continuous SOC 2 compliance. $15k+/yr. | Evidence collection from monitoring, not from simulation. |
+
+---
 
 ### CISO
 "Run unlimited realistic exercises. Get a readiness score that trends over time. Prove to the board we are improving, not just checking boxes."
@@ -111,7 +180,9 @@ Three shifts make this product timely:
 | **Traditional consultancies** | Run 1-2 tabletops per year. Deliver PDF report. $25k-$75k per engagement. | Unlimited exercises. Live scoring. Continuous improvement tracking. 10x cheaper. |
 | **GRC platforms (ServiceNow, OneTrust, Archer)** | Track controls and policies. Do not run exercises. | We generate evidence from actual simulation. Our scores reflect tested readiness, not self-assessments. |
 | **Tabletop software (Bsimm, CATA, simple scenario tools)** | Static scenarios. No adaptive injects. No standards mapping. | Adaptive injects. Multi-framework mapping. Export-ready evidence. |
-| **Cyber range platforms** | Technical sandbox for red/blue team exercises. Expensive. Requires infrastructure. | Executive and board focus. No technical setup. SaaS delivery. 1/10 the cost. |
+| **Cyber range platforms (Scythe, AttackIQ)** | Technical sandbox for red/blue team exercises. Expensive. Requires infrastructure. | Executive and board focus. No technical setup. SaaS delivery. 1/10 the cost. |
+| **YC AI-pentesting startups (Hex, MindFort, Nebula, Veria, Casco, Fabraix)** | AI agents find vulns in code, APIs, AI models. Technical output. | Organizational readiness. Tests people and process, not just code. Board-ready evidence. |
+| **YC agent-security startups (Multifactor, Alter, Silmaril, Candor, Tolmo, Cotool)** | Auth, DLP, runtime protection for AI agents. Technical controls. | Complements rather than competes. Their controls need our exercises to verify they work under pressure. |
 
 ---
 
