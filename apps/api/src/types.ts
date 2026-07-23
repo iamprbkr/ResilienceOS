@@ -176,3 +176,44 @@ export interface AfterActionReport {
     averageResponseSeconds: number;
   };
 }
+
+export type ThreatIntelSource = "cve" | "mitre-attack" | "otx" | "rss";
+
+export interface ThreatIntelItem {
+  id: string;
+  tenantId: string;
+  source: ThreatIntelSource;
+  externalId: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+  collectedAt: string;
+  severity: "None" | "Low" | "Medium" | "High" | "Critical";
+  ttpMappings: string[];
+  affectedSectors: string[];
+  relatedFrameworks: string[];
+  rawData: Record<string, unknown>;
+  processed: boolean;
+}
+
+export interface ThreatIntelCollection {
+  id: string;
+  startedAt: string;
+  completedAt: string | null;
+  source: ThreatIntelSource;
+  itemsCollected: number;
+  itemsNew: number;
+  status: "running" | "completed" | "failed";
+  error: string | null;
+}
+
+export interface GeneratedScenario extends Scenario {
+  sourceIntelId: string;
+  injects: Array<{
+    title: string;
+    channel: Inject["channel"];
+    severity: Inject["severity"];
+    minute: number;
+    decisionRequired: boolean;
+  }>;
+}

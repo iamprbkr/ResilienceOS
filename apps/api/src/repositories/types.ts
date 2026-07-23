@@ -1,4 +1,4 @@
-import type { AuditEvent, FrameworkEdge, FrameworkNode, Inject, Scenario, Scorecard, SimulationSession, Tenant } from "../types.js";
+import type { AuditEvent, FrameworkEdge, FrameworkNode, Inject, Scenario, Scorecard, SimulationSession, Tenant, ThreatIntelItem, ThreatIntelCollection, ThreatIntelSource } from "../types.js";
 
 export interface FrameworkMapping {
   framework: string;
@@ -37,5 +37,14 @@ export interface PlatformRepository {
   };
   standards: {
     graph: () => Promise<{ nodes: FrameworkNode[]; edges: FrameworkEdge[] }>;
+  };
+  threatIntel: {
+    listByTenant: (tenantId: string, since?: string, source?: ThreatIntelSource) => Promise<ThreatIntelItem[]>;
+    findById: (tenantId: string, intelId: string) => Promise<ThreatIntelItem | undefined>;
+    findByExternalId: (tenantId: string, externalId: string) => Promise<ThreatIntelItem | undefined>;
+    create: (item: ThreatIntelItem) => Promise<ThreatIntelItem>;
+    update: (item: ThreatIntelItem) => Promise<ThreatIntelItem>;
+    recordCollection: (collection: ThreatIntelCollection) => Promise<ThreatIntelCollection>;
+    listCollections: () => Promise<ThreatIntelCollection[]>;
   };
 }

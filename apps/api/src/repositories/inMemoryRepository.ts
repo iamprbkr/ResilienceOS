@@ -1,6 +1,9 @@
 import { auditEvents, frameworkGraph, injects, mappings, scenarios, scorecards, sessions, tenants } from "../data/seed.js";
-import type { AuditEvent, Inject, Scenario, SimulationSession } from "../types.js";
+import type { AuditEvent, Inject, Scenario, SimulationSession, ThreatIntelItem, ThreatIntelCollection, ThreatIntelSource } from "../types.js";
 import type { PlatformRepository } from "./types.js";
+
+const threatIntelItems: ThreatIntelItem[] = [];
+const threatIntelCollections: ThreatIntelCollection[] = [];
 
 export const inMemoryRepository: PlatformRepository = {
   tenants: {
@@ -52,5 +55,31 @@ export const inMemoryRepository: PlatformRepository = {
   },
   standards: {
     graph: async () => frameworkGraph
+  },
+  threatIntel: {
+    listByTenant: async (tenantId: string, since?: string, source?: ThreatIntelSource) =>
+      threatIntelItems.filter((item) =>
+        item.tenantId === tenantId &&
+        (!since || item.collectedAt >= since) &&
+        (!source || item.source === source)
+      ),
+    findById: async (tenantId: string, intelId: string) =>
+      threatIntelItems.find((item) => item.id === intelId && item.tenantId === tenantId),
+    findByExternalId: async (tenantId: string, externalId: string) =>
+      threatIntelItems.find((item) => item.externalId === externalId && item.tenantId === tenantId),
+    create: async (item: ThreatIntelItem) => {
+      threatIntelItems.push(item);
+      return item;
+    },
+    update: async (item: ThreatIntelItem) => {
+      const index = threatIntelItems.findIndex((i) => i.id === item.id);
+      if (index >= 0) threatIntelItems[index] = item;
+      return item;
+    },
+    recordCollection: async (collection: ThreatIntelCollection) => {
+      threatIntelCollections.push(collection);
+      return collection;
+    },
+    listCollections: async () => threatIntelCollections
   }
 };

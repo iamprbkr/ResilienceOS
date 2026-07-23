@@ -20,6 +20,8 @@ import { getCoverageByFramework, getStandardsGraph, findRelatedControls } from "
 import { generateAfterActionReport } from "./services/reportService.js";
 import { createScenario, listScenarios } from "./services/scenarioService.js";
 import { advanceSimulation, getSimulationSummary, logDecision, startSimulation } from "./services/simulationService.js";
+import { collectAll, collectSource, listIntel, getIntelStats, processWithAI } from "./services/threatIntelService.js";
+import { generateFromIntel, generateOnDemand } from "./services/scenarioGeneratorService.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -96,7 +98,7 @@ app.use(express.json({ limit: "1mb" }));
 app.use(morgan("tiny"));
 if (process.env.SERVE_FRONTEND !== "false") {
   app.use(express.static(frontendDist));
-  const apiPrefixes = ["/health", "/ready", "/security", "/production", "/enterprise", "/monitoring", "/billing", "/integrations", "/support", "/sso", "/tenants", "/invites", "/reports", "/training", "/marketplace", "/evidence", "/deployment", "/board", "/demo-data", "/docs", "/auth", "/me", "/users", "/notifications", "/scenarios", "/simulations", "/standards", "/audit-events"];
+  const apiPrefixes = ["/health", "/ready", "/security", "/production", "/enterprise", "/monitoring", "/billing", "/integrations", "/support", "/sso", "/tenants", "/invites", "/reports", "/training", "/marketplace", "/evidence", "/deployment", "/board", "/demo-data", "/docs", "/auth", "/me", "/users", "/notifications", "/scenarios", "/simulations", "/standards", "/audit-events", "/threat-intel"];
   // ponytail: SPA catch-all before auth; API routes still get auth via requireAuth
   app.use((req, res, next) => {
     if (req.method !== "GET") return next();
@@ -740,6 +742,79 @@ app.get("/audit-events/export.csv", (req: Request, res: Response) => {
   res.send(csv);
 });
 
+// Threat Intel endpoints — daily collection, on-demand scenario generation
+app.get("/threat-intel", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = (req as AuthenticatedRequest).user;
+    const since = req.query.since as string | undefined;
+    const source = req.query.source as string | undefined;
+    if (source && !["cve", "mitre-attack", "otx", "rss"].includes(source)) {
+      res.status(400).json({ error: "Invalid source. Use: cve, mitre-attack, otx, rss" });
+      return;
+    }
+    res.json(await listIntel(user, since, source as never));
+  } catch (error) { next(error); }
+});
+
+app.get("/threat-intel/stats", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json(await getIntelStats((req as AuthenticatedRequest).user));
+  } catch (error) { next(error); }
+});
+
+app.post("/threat-intel/collect", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = (req as AuthenticatedRequest).user;
+    const body = z.object({ source: z.enum(["all", "cve", "rss"]).default("all") }).parse(req.body ?? {});
+    if (body.source === "all") {
+      res.json(await collectAll(user));
+    } else {
+      const result = await collectSource(user, body.source);
+      res.json(result ? [result] : []);
+    }
+  } catch (error) { next(error); }
+});
+
+app.post("/threat-intel/:intelId/process", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = (req as AuthenticatedRequest).user;
+    const result = await processWithAI(user, req.params.intelId);
+    if (!result) { res.status(404).json({ error: "Intel item not found" }); return; }
+    res.json(result);
+  } catch (error) { next(error); }
+});
+
+app.post("/threat-intel/:intelId/generate-scenario", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = (req as AuthenticatedRequest).user;
+    const body = z.object({
+      sector: z.string().optional(),
+      module: z.enum(["Executive Tabletop Exercise", "AI Threat Simulation", "Cyber Resilience", "GRC & Compliance", "Business Continuity", "Crisis Management", "Data Protection", "Analytics"]).optional(),
+      difficulty: z.enum(["Executive", "Operational", "Technical", "Board"]).optional(),
+      frameworks: z.array(z.string()).optional()
+    }).parse(req.body ?? {});
+    const result = await generateFromIntel(user, req.params.intelId, body);
+    if (!result) { res.status(404).json({ error: "Intel item not found" }); return; }
+    res.status(201).json(result);
+  } catch (error) { next(error); }
+});
+
+app.post("/threat-intel/generate-on-demand", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = (req as AuthenticatedRequest).user;
+    const body = z.object({
+      sector: z.string().optional(),
+      module: z.enum(["Executive Tabletop Exercise", "AI Threat Simulation", "Cyber Resilience", "GRC & Compliance", "Business Continuity", "Crisis Management", "Data Protection", "Analytics"]).optional(),
+      difficulty: z.enum(["Executive", "Operational", "Technical", "Board"]).optional(),
+      frameworks: z.array(z.string()).optional(),
+      daysBack: z.number().int().min(1).max(90).optional()
+    }).parse(req.body ?? {});
+    const result = await generateOnDemand(user, body);
+    if (!result) { res.status(404).json({ error: "No threat intel available to generate scenario" }); return; }
+    res.status(201).json(result);
+  } catch (error) { next(error); }
+});
+
 app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (error instanceof z.ZodError) {
     res.status(400).json({ error: "Validation failed", details: error.flatten() });
@@ -781,6 +856,19 @@ setInterval(() => {
     if (client.readyState === client.OPEN) client.send(payload);
   }
 }, 5000);
+
+// Daily threat intel collection (every 6 hours)
+const COLLECTION_INTERVAL_MS = 21600000;
+async function runScheduledCollection() {
+  try {
+    const systemUser = { sub: "usr-system", tenantId: "ten-sovereign-health", role: "Admin" as const };
+    await collectAll(systemUser);
+  } catch (error) {
+    console.error("[SCHEDULED] Threat intel collection failed:", error instanceof Error ? error.message : error);
+  }
+}
+setInterval(runScheduledCollection, COLLECTION_INTERVAL_MS);
+runScheduledCollection();
 
 server.listen(port, () => {
   console.log(`AI resilience platform listening on http://localhost:${port}`);

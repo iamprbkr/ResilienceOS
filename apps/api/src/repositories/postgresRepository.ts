@@ -1,6 +1,6 @@
 import { pool } from "./postgresClient.js";
 import type { PlatformRepository } from "./types.js";
-import type { AuditEvent, Decision, FrameworkEdge, FrameworkNode, Inject, Role, Scenario, SimulationSession } from "../types.js";
+import type { AuditEvent, Decision, FrameworkEdge, FrameworkNode, Inject, Role, Scenario, SimulationSession, ThreatIntelItem, ThreatIntelCollection, ThreatIntelSource } from "../types.js";
 
 const rows = <T>(result: { rows: T[] }) => result.rows;
 
@@ -247,5 +247,81 @@ export const postgresRepository: PlatformRepository = {
         edges: edges.rows as FrameworkEdge[]
       };
     }
+  },
+  threatIntel: {
+    async listByTenant(tenantId, since, source) {
+      let query = "select * from threat_intel where tenant_id = $1";
+      const params: unknown[] = [tenantId];
+      let idx = 2;
+      if (since) { query += ` and collected_at >= $${idx++}`; params.push(since); }
+      if (source) { query += ` and source = $${idx++}`; params.push(source); }
+      query += " order by collected_at desc";
+      const result = await pool.query(query, params);
+      return result.rows.map((row: Record<string, unknown>) => threatIntelFromRow(row));
+    },
+    async findById(tenantId, intelId) {
+      const result = await pool.query("select * from threat_intel where id = $1 and tenant_id = $2", [intelId, tenantId]);
+      return result.rows[0] ? threatIntelFromRow(result.rows[0]) : undefined;
+    },
+    async findByExternalId(tenantId, externalId) {
+      const result = await pool.query("select * from threat_intel where external_id = $1 and tenant_id = $2", [externalId, tenantId]);
+      return result.rows[0] ? threatIntelFromRow(result.rows[0]) : undefined;
+    },
+    async create(item) {
+      await pool.query(
+        `insert into threat_intel (id, tenant_id, source, external_id, title, description, published_at, collected_at, severity, ttp_mappings, affected_sectors, related_frameworks, raw_data, processed)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+        [item.id, item.tenantId, item.source, item.externalId, item.title, item.description, item.publishedAt, item.collectedAt, item.severity, JSON.stringify(item.ttpMappings), JSON.stringify(item.affectedSectors), JSON.stringify(item.relatedFrameworks), JSON.stringify(item.rawData), item.processed]
+      );
+      return item;
+    },
+    async update(item) {
+      await pool.query(
+        `update threat_intel set severity=$3, ttp_mappings=$4, affected_sectors=$5, related_frameworks=$6, processed=$7 where id=$1 and tenant_id=$2`,
+        [item.id, item.tenantId, item.severity, JSON.stringify(item.ttpMappings), JSON.stringify(item.affectedSectors), JSON.stringify(item.relatedFrameworks), item.processed]
+      );
+      return item;
+    },
+    async recordCollection(collection) {
+      await pool.query(
+        `insert into threat_intel_collections (id, started_at, completed_at, source, items_collected, items_new, status, error)
+         values ($1,$2,$3,$4,$5,$6,$7,$8)
+         on conflict (id) do update set completed_at=$3, status=$7, error=$8`,
+        [collection.id, collection.startedAt, collection.completedAt, collection.source, collection.itemsCollected, collection.itemsNew, collection.status, collection.error]
+      );
+      return collection;
+    },
+    async listCollections() {
+      const result = await pool.query("select * from threat_intel_collections order by started_at desc limit 50");
+      return result.rows.map((row: Record<string, unknown>) => ({
+        id: String(row.id),
+        startedAt: String(row.started_at),
+        completedAt: row.completed_at ? String(row.completed_at) : null,
+        source: String(row.source) as ThreatIntelSource,
+        itemsCollected: Number(row.items_collected),
+        itemsNew: Number(row.items_new),
+        status: String(row.status) as ThreatIntelCollection["status"],
+        error: row.error as string | null
+      }));
+    }
   }
 };
+
+function threatIntelFromRow(row: Record<string, unknown>): ThreatIntelItem {
+  return {
+    id: String(row.id),
+    tenantId: String(row.tenant_id),
+    source: String(row.source) as ThreatIntelItem["source"],
+    externalId: String(row.external_id),
+    title: String(row.title),
+    description: String(row.description),
+    publishedAt: String(row.published_at),
+    collectedAt: String(row.collected_at),
+    severity: String(row.severity) as ThreatIntelItem["severity"],
+    ttpMappings: (row.ttp_mappings as string[]) ?? [],
+    affectedSectors: (row.affected_sectors as string[]) ?? [],
+    relatedFrameworks: (row.related_frameworks as string[]) ?? [],
+    rawData: (row.raw_data as Record<string, unknown>) ?? {},
+    processed: Boolean(row.processed)
+  };
+}

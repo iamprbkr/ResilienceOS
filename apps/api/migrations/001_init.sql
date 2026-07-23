@@ -124,3 +124,34 @@ create index if not exists idx_sessions_tenant_id on simulation_sessions(tenant_
 create index if not exists idx_injects_scenario_id on injects(scenario_id);
 create index if not exists idx_decisions_session_id on decisions(session_id);
 create index if not exists idx_audit_tenant_id_created_at on audit_events(tenant_id, created_at desc);
+
+create table if not exists threat_intel (
+  id text primary key,
+  tenant_id text not null references tenants(id) on delete cascade,
+  source text not null,
+  external_id text not null,
+  title text not null,
+  description text not null,
+  published_at timestamptz not null,
+  collected_at timestamptz not null default now(),
+  severity text not null default 'None',
+  ttp_mappings jsonb not null default '[]',
+  affected_sectors jsonb not null default '[]',
+  related_frameworks jsonb not null default '[]',
+  raw_data jsonb not null default '{}',
+  processed boolean not null default false,
+  unique (tenant_id, external_id)
+);
+
+create table if not exists threat_intel_collections (
+  id text primary key,
+  started_at timestamptz not null,
+  completed_at timestamptz,
+  source text not null,
+  items_collected integer not null default 0,
+  items_new integer not null default 0,
+  status text not null default 'running',
+  error text
+);
+
+create index if not exists idx_threat_intel_tenant_collected on threat_intel(tenant_id, collected_at desc);
